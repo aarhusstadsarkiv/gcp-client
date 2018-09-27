@@ -1,6 +1,7 @@
 # My exceptions
 .vscode/
 aarhusiana-aedd4578c625.json
+csv-files/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

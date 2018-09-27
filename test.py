@@ -4,10 +4,11 @@ import csv
 
 from google.cloud import datastore
 
-def _chunks(l, n):
+def _chunk(l, n):
     """Yield successive n-sized chunks from l."""
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
+    return [l[i:i + n] for i in range(0, len(l), n)]
+    # for i in range(0, len(l), n):
+    #     yield l[i:i + n]
 
 
 def create_client(cred_json: Path = None) -> List:
@@ -58,11 +59,10 @@ def update_entries(table: str, update_file: Path):
     #     elif update_file.suffix == 'json':
     #     else:
     #         return {'errors': {'error': 'Update_file must be csv or json.'}}
-
     return True
 
 
-def update_autosuggest(client, update_file):
+def update_autosuggest(client, update_file: Path):
     """Update_file must be in csv-format and include these columns:
     'tokenID' (entityID)
     'tokenDomain' (entityType)
@@ -70,23 +70,44 @@ def update_autosuggest(client, update_file):
     Furthermore include a column for each property you want to update.
     Some properties
     """
-    modified_entities = []
+    modified_entries = []
     with open(update_file) as ifile:
-        for row in csv.reader(ifile[1:]):
+        for row in csv.reader(ifile):
             query = client.query(kind='AutoToken_v2')
-            query.add_filter('tokenID', '=', row[0])
+            query.add_filter('tokenID', '=', int(row[0]))
             query.add_filter('tokenDomain', '=', row[1])
-            
-            for entity in list(query.fetch(1)):
-                entity.update({
-                    'autoGroup': set(entity.autoGroup).union({2}) 
-                })
-                modified_entities.append(entity)
 
-    for chunk in list(_chunks(modified_entities, 50)):
-        client.put_multi(chunk)
+            result = list(query.fetch(limit=1))
+            print("results: " + str(len(result)))
+            for entity in result:
+                if 2 in entity.get('autoGroup'):
+                    continue
+
+                autoGroup = set(entity.get('autoGroup') + [2])
+                # print(autoGroup)
+                entity.update({
+                    'autoGroup': list(autoGroup)
+                })
+                print('updated entry: ' + row[0] + ' ' + entity.get('display'))
+                print('subdisplay: ' + entity.get('subDisplay'))
+                # print(sorted(entity.items()))
+                try:
+                    client.put(entity)
+                except Exception as e:
+                    print(e)
+                print('uploaded entry: ' + row[0])
+                modified_entries.append(entity)
+
+    for chunk in _chunk(modified_entries, 50):
+        try:
+            client.put_multi(chunk)
+        except Exception as e:
+            print(e)
 
 
 if __name__ == '__main__':
     client = create_client()
-    print(format_entities(list_suggestions(client)))
+    print("client created")
+    update_autosuggest(client, 'csv-files/20180927_aarhusteater______people_from_ext_data.csv')
+    print('finished')
+    # print(format_entities(list_suggestions(client)))
