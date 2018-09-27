@@ -108,6 +108,6 @@ def update_autosuggest(client, update_file: Path):
 if __name__ == '__main__':
     client = create_client()
     print("client created")
-    update_autosuggest(client, 'csv-files/20180927_aarhusteater______people_from_ext_data.csv')
+    update_autosuggest(client, 'csv-files/20180927_aarhusteater_people_from_Skuespiller.csv')
     print('finished')
     # print(format_entities(list_suggestions(client)))
