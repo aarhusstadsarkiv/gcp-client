@@ -70,44 +70,44 @@ def update_autosuggest(client, update_file: Path):
     Furthermore include a column for each property you want to update.
     Some properties
     """
-    modified_entries = []
+    # modified_entries = []
     with open(update_file) as ifile:
         for row in csv.reader(ifile):
             query = client.query(kind='AutoToken_v2')
             query.add_filter('tokenID', '=', int(row[0]))
-            query.add_filter('tokenDomain', '=', row[1])
+            # query.add_filter('tokenDomain', '=', row[1])
 
             result = list(query.fetch(limit=1))
-            print("results: " + str(len(result)))
+            # print("number of results: " + str(len(result)))
             for entity in result:
                 if 2 in entity.get('autoGroup'):
+                    print('already updated: ' + row[0] + ' ' + entity.get('display') + ' ' + entity.get('subDisplay'))
                     continue
 
-                autoGroup = set(entity.get('autoGroup') + [2])
-                # print(autoGroup)
+                autoGroup = entity.get('autoGroup') + [2]
                 entity.update({
-                    'autoGroup': list(autoGroup)
+                    'autoGroup': autoGroup
                 })
-                print('updated entry: ' + row[0] + ' ' + entity.get('display'))
-                print('subdisplay: ' + entity.get('subDisplay'))
+                print('trying to update: ' + row[0] + ' ' + entity.get('display') + ' ' + entity.get('subDisplay'))
+                # print('subdisplay: ' + entity.get('subDisplay'))
                 # print(sorted(entity.items()))
                 try:
                     client.put(entity)
+                    print('uploaded entry: ' + row[0])
                 except Exception as e:
                     print(e)
-                print('uploaded entry: ' + row[0])
-                modified_entries.append(entity)
 
-    for chunk in _chunk(modified_entries, 50):
-        try:
-            client.put_multi(chunk)
-        except Exception as e:
-            print(e)
+                # modified_entries.append(entity)
+
+    # for chunk in _chunk(modified_entries, 50):
+    #     try:
+    #         client.put_multi(chunk)
+    #     except Exception as e:
+    #         print(e)
 
 
 if __name__ == '__main__':
     client = create_client()
     print("client created")
-    update_autosuggest(client, 'csv-files/20180927_aarhusteater_people_from_Skuespiller.csv')
+    update_autosuggest(client, 'csv-files/20181015_aarhusteater_relations.txt')
     print('finished')
-    # print(format_entities(list_suggestions(client)))
